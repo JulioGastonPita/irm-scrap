@@ -39,9 +39,16 @@ func (bnEngine GoogleAPIEngine) Search(request models.IRMExtraSearchRequest, sea
 
 	// cargo las urls de respuestas
 	if request.MaxURLs == 0 {
-		request.MaxURLs = 10
+		request.MaxURLs = 11
+	} else {
+		request.MaxURLs = 11
 	}
-	urlQuery += fmt.Sprintf("&start=1&num=%s", request.MaxURLs+1)
+	urlQuery += fmt.Sprintf("&start=1&num=%d", request.MaxURLs)
+
+	// cargo el Market si viene especificado
+	if len(request.Markets) > 0 {
+		urlQuery += "&" + fmt.Sprintf("cr=country%s", request.Markets[0])
+	}
 
 	req, err := http.NewRequest("GET", urlQuery, nil)
 	if err != nil {
