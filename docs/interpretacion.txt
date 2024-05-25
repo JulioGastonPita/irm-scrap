@@ -2,9 +2,18 @@
 
 BingNewApiEngine
     RowsProvider (aparentemente el prove de BD)
-    Apiey
+    Apikey
     ApiUrl
     Engine (nombre del buscador.. no está la definicion)
-    Search (Busca y Graba)
-    ExtraSearchPlugin
+    Search (Busca y Graba) -> IRMExtraSearchRequest
+                                    Query        string     `json:"query"`
+                                    EntityType   string     ????
+                                    MaxURLs      int        `json:"maxUrls"`
+                                    DateFrom     *time.Time `json:"dateFrom,omitempty"`
+                                    DateTo       *time.Time `json:"dateTo,omitempty"`
+                                    SearchEngine string     `json:"searchEngine"`
+                                    Markets      []string   `json:"markets"`
+    ExtraSearchPlugin (aparentemente el plugin que llama desde los modulos)
+
+
      
