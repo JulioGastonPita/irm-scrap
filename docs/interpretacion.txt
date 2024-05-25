@@ -1,0 +1,10 @@
+
+
+BingNewApiEngine
+    RowsProvider (aparentemente el prove de BD)
+    Apiey
+    ApiUrl
+    Engine (nombre del buscador.. no está la definicion)
+    Search (Busca y Graba)
+    ExtraSearchPlugin
+     
