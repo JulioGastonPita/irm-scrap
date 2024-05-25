@@ -23,8 +23,16 @@ func main() {
 	dateFrom, _ := time.Parse("2006-01-02", "2023-07-01")
 	dateTo, _ := time.Parse("2006-01-02", "2024-07-01")
 
-	miGoogleEngine.Search(models.IRMExtraSearchRequest{Query: "pablo petrecca",
-		DateFrom: &dateFrom, DateTo: &dateTo}, 1)
+	// Cargos algunas opciones de busquedas
+	// para el caso de los Markets, solo se puede especificar uno
+	// debido al requerimiento de Google, en caso de que se necesite mas un un Market ( ISO 3166-1 alfa-2)
+	// debería combinarse los resultados
+	search := models.IRMExtraSearchRequest{Query: "Lionel Messi",
+		DateFrom: &dateFrom,
+		DateTo:   &dateTo,
+		Markets:  []string{"AE"}}
+
+	miGoogleEngine.Search(search, 1)
 
 	// miurl := "https://www.google.com/search?oq=%D8%AC%D9%86%D9%8A%D9%86+%D8%A8%D9%88%D9%86%D8%B3+%D8%A7%D9%8A%D8%B1%D8%B3&q=%D8%AC%D9%86%D9%8A%D9%86%20%D8%A8%D9%88%D9%86%D8%B3%20%D8%A7%D9%8A%D8%B1%D8%B3&start=1&num=10"
 	// getData(miurl)

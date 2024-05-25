@@ -37,6 +37,12 @@ func (bnEngine GoogleAPIEngine) Search(request models.IRMExtraSearchRequest, sea
 		urlQuery += "&" + fmt.Sprintf("tbs=cdr:1,cd_min:%s,cd_max:%s", url.QueryEscape(request.DateFrom.Format("01/02/2006")), url.QueryEscape(request.DateTo.Format("01/02/2006")))
 	}
 
+	// cargo las urls de respuestas
+	if request.MaxURLs == 0 {
+		request.MaxURLs = 10
+	}
+	urlQuery += fmt.Sprintf("&start=1&num=%s", request.MaxURLs+1)
+
 	req, err := http.NewRequest("GET", urlQuery, nil)
 	if err != nil {
 		log.Fatal(err)
