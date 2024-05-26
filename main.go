@@ -15,8 +15,11 @@ func main() {
 	//Opciones de Google,
 	// los headers son opcionales, el valor cargado en el ejempl
 	// es el de omision
-	miGoogleEngineOptions := ge.GoogleAPIEngineOptions{}
-	miGoogleEngineOptions.Headers = []ge.Header{{Key: "User-Agent", Value: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/101.0.4951.54 Safari/537.36"}}
+	miGoogleEngineOptions := ge.GoogleAPIEngineOptions{
+		Headers: []ge.Header{
+			{Key: "User-Agent", Value: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/101.0.4951.54 Safari/537.36"},
+		},
+	}
 
 	miGoogleEngine, _ := ge.NewGoogleAPIEngine(miGoogleEngineOptions)
 
@@ -28,10 +31,10 @@ func main() {
 	// debido al requerimiento de Google, en caso de que se necesite mas un un Market ( ISO 3166-1 alfa-2)
 	// debería combinarse los resultados
 	//	search := models.IRMExtraSearchRequest{Query:
-	search := models.IRMExtraSearchRequest{Query: "lionel Messi",
+	search := models.IRMExtraSearchRequest{Query: "ليونل مسي",
 		DateFrom: &dateFrom,
 		DateTo:   &dateTo,
-		Markets:  []string{"AR"}}
+		Markets:  []string{"AE"}}
 
 	miGoogleEngine.Search(search, 1)
 

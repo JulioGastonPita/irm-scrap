@@ -5,6 +5,7 @@ import (
 	"log"
 	"net/http"
 	"net/url"
+	"sync"
 	"time"
 
 	"github.com/JulioGastonPita/irm-scrap.git/models"
@@ -38,7 +39,7 @@ func (bnEngine GoogleAPIEngine) Search(request models.IRMExtraSearchRequest, sea
 		urlQuery += "&" + fmt.Sprintf("tbs=cdr:1,cd_min:%s,cd_max:%s", url.QueryEscape(request.DateFrom.Format("01/02/2006")), url.QueryEscape(request.DateTo.Format("01/02/2006")))
 	}
 
-	// cargo las urls de respuestas
+	// cargo la cantidad solicitadas de Urls de respuestas
 	if request.MaxURLs == 0 {
 		request.MaxURLs = 10
 	}
@@ -49,6 +50,7 @@ func (bnEngine GoogleAPIEngine) Search(request models.IRMExtraSearchRequest, sea
 		urlQuery += "&" + fmt.Sprintf("cr=country%s", request.Markets[0])
 	}
 
+	// creo el request
 	req, err := http.NewRequest("GET", urlQuery, nil)
 	if err != nil {
 		log.Fatal(err)
@@ -59,6 +61,7 @@ func (bnEngine GoogleAPIEngine) Search(request models.IRMExtraSearchRequest, sea
 		req.Header.Set(header.Key, header.Value)
 	}
 
+	// ejecuto el request
 	client := &http.Client{}
 	res, err := client.Do(req)
 	if err != nil {
@@ -66,23 +69,26 @@ func (bnEngine GoogleAPIEngine) Search(request models.IRMExtraSearchRequest, sea
 	}
 	defer res.Body.Close()
 
+	// cargo el documento de respuesta
 	doc, err := goquery.NewDocumentFromReader(res.Body)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	// cargo la response
-	var googleAPIResponse = new(GoogleApiResponse)
-	googleAPIResponse.OriginalQuery = request.Query
-	googleAPIResponse.Market = request.Markets[0]
-	googleAPIResponse.MaxURLs = request.MaxURLs
-	googleAPIResponse.DateFrom = request.DateFrom
-	googleAPIResponse.DateTo = request.DateTo
-
-	googleAPIResponse.Values = make([]GoogleAPIResponseValue, 0)
+	// cargo la response (encabezado)
+	googleAPIResponse := &GoogleApiResponse{
+		SearchId:      searchId,
+		OriginalQuery: request.Query,
+		Market:        request.Markets[0],
+		MaxURLs:       request.MaxURLs,
+		DateFrom:      request.DateFrom,
+		DateTo:        request.DateTo,
+		Values:        make([]GoogleAPIResponseValue, 0),
+	}
 
 	// recorro las urls de resultados
-	c := 0
+	c := 0                 // contador de urls obtenidas
+	wg := sync.WaitGroup{} // wait Group para los inserts a la base de datos
 	doc.Find("div.g").Each(func(i int, result *goquery.Selection) {
 
 		// obtengo los valores de la url, titulo y snippet
@@ -97,45 +103,21 @@ func (bnEngine GoogleAPIEngine) Search(request models.IRMExtraSearchRequest, sea
 			Title:    title,
 			Snippet:  snippet,
 			Position: c})
+
+		/****
+		ATENCION!!: Aqui Modificar para guardar en la base de datos
+		            Simulo una grabacion, ya que no tengo la base de datos
+		****/
+		wg.Add(1)
+		go func(str string) {
+			defer wg.Done() // Marcamos la goroutine como completada al final
+			fmt.Println(time.Now().Format("15:04:05"), link)
+			time.Sleep(1 * time.Second) // Simulamos una operación que toma tiempo
+		}(link)
+
 	})
-}
 
-type GoogleAPIEngineOptions struct {
-	RowsProvider any
-	Headers      []Header
-}
+	// Esperamos a que todas las goroutines terminen
+	wg.Wait()
 
-type GoogleAPIEngine struct {
-	apiURL       string
-	headers      []Header
-	Engine       string
-	RowsProvider any
-	//models.ExtraSearchEnginePlugin
-}
-
-type Header struct {
-	Key   string
-	Value string
-}
-
-type GoogleAPIRequest struct {
-	Query   string `json:"query"`
-	Market  string `json:"market"`
-	MaxURLs string `json:"maxUrls,omitempty"`
-}
-
-type GoogleApiResponse struct {
-	OriginalQuery string                   `json:"originalQuery"`
-	Market        string                   `json:"market"`
-	MaxURLs       int                      `json:"maxUrls,omitempty"`
-	DateFrom      *time.Time               `json:"dateFrom,omitempty"`
-	DateTo        *time.Time               `json:"dateTo,omitempty"`
-	Values        []GoogleAPIResponseValue `json:"values"`
-}
-
-type GoogleAPIResponseValue struct {
-	Url      string `json:"url"`
-	Title    string `json:"title"`
-	Snippet  string `json:"snippet"`
-	Position int    `json:"possition"`
 }
