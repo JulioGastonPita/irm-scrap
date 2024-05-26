@@ -2,7 +2,6 @@ package engines
 
 import (
 	"fmt"
-	"log"
 	"net/http"
 	"net/url"
 	"sync"
@@ -53,7 +52,8 @@ func (bnEngine GoogleAPIEngine) Search(request models.IRMExtraSearchRequest, sea
 	// creo el request
 	req, err := http.NewRequest("GET", urlQuery, nil)
 	if err != nil {
-		log.Fatal(err)
+		FalseApiLog(fmt.Sprintf("Error al Crear Request -> %v", err.Error()))
+		return
 	}
 
 	// Agega los headers al request
@@ -65,14 +65,16 @@ func (bnEngine GoogleAPIEngine) Search(request models.IRMExtraSearchRequest, sea
 	client := &http.Client{}
 	res, err := client.Do(req)
 	if err != nil {
-		log.Fatal(err)
+		FalseApiLog(fmt.Sprintf("Error al Crear Request -> %v", err.Error()))
+		return
 	}
 	defer res.Body.Close()
 
 	// cargo el documento de respuesta
 	doc, err := goquery.NewDocumentFromReader(res.Body)
 	if err != nil {
-		log.Fatal(err)
+		FalseApiLog(fmt.Sprintf("Error al consultar Google Search -> %v", err.Error()))
+		return
 	}
 
 	// cargo la response (encabezado)
