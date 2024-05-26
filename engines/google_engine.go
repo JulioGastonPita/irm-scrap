@@ -78,7 +78,7 @@ func (bnEngine GoogleAPIEngine) Search(request models.IRMExtraSearchRequest, sea
 	}
 
 	// cargo la response (encabezado)
-	googleAPIResponse := &GoogleApiResponse{
+	googleAPIResponse := &GoogleAPIResponse{
 		SearchId:      searchId,
 		OriginalQuery: request.Query,
 		Market:        request.Markets[0],

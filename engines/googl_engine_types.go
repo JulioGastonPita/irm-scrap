@@ -26,7 +26,7 @@ type GoogleAPIRequest struct {
 	MaxURLs string `json:"maxUrls,omitempty"`
 }
 
-type GoogleApiResponse struct {
+type GoogleAPIResponse struct {
 	SearchId      int64                    `json:"searchId"`
 	OriginalQuery string                   `json:"originalQuery"`
 	Market        string                   `json:"market"`
