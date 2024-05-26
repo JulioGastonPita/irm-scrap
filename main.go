@@ -13,14 +13,14 @@ func main() {
 	// test Google
 
 	//Opciones de Google,
-	// los headers son opcionales, el valor cargado en el ejempl
-	// es el de omision
+	// los headers son opcionales, el valor cargado en el ejemplo es el de omision
 	miGoogleEngineOptions := ge.GoogleAPIEngineOptions{
 		Headers: []ge.Header{
 			{Key: "User-Agent", Value: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/101.0.4951.54 Safari/537.36"},
 		},
 	}
 
+	// creo el
 	miGoogleEngine, _ := ge.NewGoogleAPIEngine(miGoogleEngineOptions)
 
 	dateFrom, _ := time.Parse("2006-01-02", "2023-07-01")
@@ -37,13 +37,5 @@ func main() {
 		Markets:  []string{"AE"}}
 
 	miGoogleEngine.Search(search, 1)
-
-	// miurl := "https://www.google.com/search?oq=%D8%AC%D9%86%D9%8A%D9%86+%D8%A8%D9%88%D9%86%D8%B3+%D8%A7%D9%8A%D8%B1%D8%B3&q=%D8%AC%D9%86%D9%8A%D9%86%20%D8%A8%D9%88%D9%86%D8%B3%20%D8%A7%D9%8A%D8%B1%D8%B3&start=1&num=10"
-	// getData(miurl)
-	// fmt.Println()
-	// miurl = "https://www.google.com/search?q=pablo+petrecca&start=11&num=10"
-	// getData(miurl)
-	// miurl = "https://www.google.com/search?q=pablo+petrecca&start=21&num=10"
-	// getData(miurl)
 
 }
