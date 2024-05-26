@@ -5,6 +5,7 @@ import (
 	"log"
 	"net/http"
 	"net/url"
+	"time"
 
 	"github.com/JulioGastonPita/irm-scrap.git/models"
 
@@ -39,9 +40,7 @@ func (bnEngine GoogleAPIEngine) Search(request models.IRMExtraSearchRequest, sea
 
 	// cargo las urls de respuestas
 	if request.MaxURLs == 0 {
-		request.MaxURLs = 11
-	} else {
-		request.MaxURLs = 11
+		request.MaxURLs = 10
 	}
 	urlQuery += fmt.Sprintf("&start=1&num=%d", request.MaxURLs)
 
@@ -72,21 +71,32 @@ func (bnEngine GoogleAPIEngine) Search(request models.IRMExtraSearchRequest, sea
 		log.Fatal(err)
 	}
 
+	// cargo la response
+	var googleAPIResponse = new(GoogleApiResponse)
+	googleAPIResponse.OriginalQuery = request.Query
+	googleAPIResponse.Market = request.Markets[0]
+	googleAPIResponse.MaxURLs = request.MaxURLs
+	googleAPIResponse.DateFrom = request.DateFrom
+	googleAPIResponse.DateTo = request.DateTo
+
+	googleAPIResponse.Values = make([]GoogleAPIResponseValue, 0)
+
 	// recorro las urls de resultados
 	c := 0
 	doc.Find("div.g").Each(func(i int, result *goquery.Selection) {
 
-		//	title := result.Find("h3").First().Text()
+		// obtengo los valores de la url, titulo y snippet
 		link, _ := result.Find("a").First().Attr("href")
-		//	snippet := result.Find(".VwiC3b").First().Text()
-
-		//	fmt.Printf("Title: %s\n", title)
-		fmt.Printf("Position: %d Link: %s \n ", c+1, link)
-		//	fmt.Printf("Snippet: %s\n", snippet)
-		//	fmt.Printf("Position: %d\n", c+1)
-		//	fmt.Println()
-
+		title := result.Find("h3").First().Text()
+		snippet := result.Find(".VwiC3b").First().Text()
 		c++
+
+		// cargo los valores en la respuesta
+		googleAPIResponse.Values = append(googleAPIResponse.Values, GoogleAPIResponseValue{
+			Url:      link,
+			Title:    title,
+			Snippet:  snippet,
+			Position: c})
 	})
 }
 
@@ -112,4 +122,20 @@ type GoogleAPIRequest struct {
 	Query   string `json:"query"`
 	Market  string `json:"market"`
 	MaxURLs string `json:"maxUrls,omitempty"`
+}
+
+type GoogleApiResponse struct {
+	OriginalQuery string                   `json:"originalQuery"`
+	Market        string                   `json:"market"`
+	MaxURLs       int                      `json:"maxUrls,omitempty"`
+	DateFrom      *time.Time               `json:"dateFrom,omitempty"`
+	DateTo        *time.Time               `json:"dateTo,omitempty"`
+	Values        []GoogleAPIResponseValue `json:"values"`
+}
+
+type GoogleAPIResponseValue struct {
+	Url      string `json:"url"`
+	Title    string `json:"title"`
+	Snippet  string `json:"snippet"`
+	Position int    `json:"possition"`
 }

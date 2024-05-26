@@ -27,10 +27,11 @@ func main() {
 	// para el caso de los Markets, solo se puede especificar uno
 	// debido al requerimiento de Google, en caso de que se necesite mas un un Market ( ISO 3166-1 alfa-2)
 	// debería combinarse los resultados
-	search := models.IRMExtraSearchRequest{Query: "Lionel Messi",
+	//	search := models.IRMExtraSearchRequest{Query:
+	search := models.IRMExtraSearchRequest{Query: "lionel Messi",
 		DateFrom: &dateFrom,
 		DateTo:   &dateTo,
-		Markets:  []string{"AE"}}
+		Markets:  []string{"AR"}}
 
 	miGoogleEngine.Search(search, 1)
 
