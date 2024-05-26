@@ -9,9 +9,7 @@ import (
 )
 
 func main() {
-
-	// test Google
-
+	// Test
 	//Opciones de Google,
 	// los headers son opcionales, el valor cargado en el ejemplo es el de omision
 	miGoogleEngineOptions := ge.GoogleAPIEngineOptions{
@@ -30,7 +28,6 @@ func main() {
 	// para el caso de los Markets, solo se puede especificar uno
 	// debido al requerimiento de Google, en caso de que se necesite mas un un Market ( ISO 3166-1 alfa-2)
 	// debería combinarse los resultados
-	//	search := models.IRMExtraSearchRequest{Query:
 	search := models.IRMExtraSearchRequest{Query: "ليونل مسي",
 		DateFrom: &dateFrom,
 		DateTo:   &dateTo,
