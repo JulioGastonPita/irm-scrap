@@ -16,5 +16,16 @@
 
 
 
-  Teniendo ya creado el objeto
+  Teniendo ya creado el objeto, se puede llamar a buscar las URL con:
+
+        	miGoogleEngine.Search(search, 1)
+
+            Donde search es un objeto IRMExtraSearchRequest
+                  Se utilizaran las siguientes propiedades.
+                     Query: "ليونل مسي",       <- Texto a buscar (puede ser cualquier idioma)
+                     DateFrom:                 <- Opcional: desde fecha
+                     DateTo:                   <- Opcional: hasta fecha
+                     Markets:  []string{"AE"}  <- Opcional: un valor estándar ISO 3166-1 alpha-2.
+                     MaxUrls:                  <- Opcional: maxima url de resultasdos, omision 10
+                 
 
