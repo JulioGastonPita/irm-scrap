@@ -33,6 +33,6 @@ func main() {
 		DateTo:   &dateTo,
 		Markets:  []string{"AE"}}
 
-	miGoogleEngine.Search(search, 1)
+	miGoogleEngine.Search(search, 12)
 
 }
