@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"regexp"
+	"strings"
 	"sync"
 	"time"
 
@@ -49,7 +51,7 @@ func (bnEngine YahooAPIEngine) Search(request models.IRMExtraSearchRequest, sear
 		urlQuery += "&" + fmt.Sprintf("cr=country%s", request.Markets[0])
 	}
 
-	urlQuery = "https://search.yahoo.com/search?p=chatgpt&fr=yfp-t&ei=UTF-8&n=10&b=11"
+	urlQuery = "https://ar.search.yahoo.com/search?p=pisanesa&fr=yfp-t&fr2=p%3Afp%2Cm%3Asb&ei=UTF-8&fp=1&b=21"
 
 	// creo el request
 	req, err := http.NewRequest("GET", urlQuery, nil)
@@ -102,12 +104,32 @@ func (bnEngine YahooAPIEngine) Search(request models.IRMExtraSearchRequest, sear
 	// recorro las urls de resultados
 	c := 0                 // contador de urls obtenidas
 	wg := sync.WaitGroup{} // wait Group para los inserts a la base de datos
-	doc.Find("div.dd.fst.algo.algo-sr.relsrch.Sr").Each(func(i int, result *goquery.Selection) {
+
+	doc.Find(".algo-sr").Each(func(i int, result *goquery.Selection) {
+
+		// imprimir en pantalla todo el contenido de result en texto
+		// resultText := result.Text()
+		// fmt.Println(resultText)
+
+		// // imprimir por pantalla la etiqueta correspondiente al texto
+		// fmt.Println(result.Nodes[0].Data)
 
 		// obtengo los valores de la url, titulo y snippet
 		link, _ := result.Find("a").First().Attr("href")
-		title := result.Find("h3").First().Text()
-		snippet := result.Find(".VwiC3b").First().Text()
+
+		title, _ := result.Find("a").First().Attr("aria-label")
+
+		snippet := result.Find("span.fc-falcon").First().Text()
+		//	snippet := result.Text()
+
+		// println(snippet)
+
+		// result.Find("div.p.span.fc-refblack").Each(func(index int, item *goquery.Selection) {
+		// 	// Obtiene el texto del elemento
+		// 	text := item.Text()
+		// 	fmt.Printf("Element %d: %s\n", index, text)
+		// })
+
 		c++
 
 		// cargo los valores en la respuesta
@@ -117,6 +139,14 @@ func (bnEngine YahooAPIEngine) Search(request models.IRMExtraSearchRequest, sear
 			Snippet:  snippet,
 			Position: c})
 
+		println("URL: ", sanitizeURL(link))
+		println("title: ", cleanHTMLTags(title))
+		println("snippet: ", snippet)
+		println("**************************************")
+
+		// println("Title: ", title)
+		// println("Snippet: ", snippet)
+
 		/****
 		ATENCION!!: Aqui Modificar para guardar en la base de datos
 		            Simulo una grabacion, ya que no tengo la base de datos
@@ -124,7 +154,7 @@ func (bnEngine YahooAPIEngine) Search(request models.IRMExtraSearchRequest, sear
 		wg.Add(1)
 		go func(str string) {
 			defer wg.Done() // Marcamos la goroutine como completada al final
-			fmt.Println(time.Now().Format("15:04:05"), link)
+			//			fmt.Println(time.Now().Format("15:04:05"), link)
 			time.Sleep(1 * time.Second) // Simulamos una operación que toma tiempo
 		}(link)
 
@@ -133,4 +163,28 @@ func (bnEngine YahooAPIEngine) Search(request models.IRMExtraSearchRequest, sear
 	// Esperamos a que todas las goroutines terminen
 	wg.Wait()
 
+}
+func sanitizeURL(input string) string {
+	startIndex := strings.Index(input, "/RU=")
+	endIndex := strings.Index(input, "/RK=")
+	if startIndex == -1 || endIndex == -1 {
+		return ""
+	}
+	startIndex += 4
+	if startIndex >= endIndex {
+		return ""
+	}
+	decodedURL, err := url.QueryUnescape(input[startIndex:endIndex])
+	if err != nil {
+		return ""
+	}
+	return decodedURL
+}
+
+func cleanHTMLTags(input string) string {
+	// Remove HTML tags using regex
+	re := regexp.MustCompile("<[^>]*>")
+	cleanedString := re.ReplaceAllString(input, "")
+
+	return cleanedString
 }
