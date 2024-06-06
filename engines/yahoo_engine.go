@@ -47,85 +47,108 @@ func (bnEngine YahooAPIEngine) Search(request models.IRMExtraSearchRequest, sear
 		urlQuery += fmt.Sprintf("&fr=yfp-t&bt=%s&et=%s", request.DateFrom.Format("20060102"), request.DateTo.Format("20060102"))
 	}
 
-	// creo el request
-	req, err := http.NewRequest("GET", urlQuery, nil)
-	if err != nil {
-		FalseApiLog(fmt.Sprintf("Error al Crear Request -> %v", err.Error()))
-		return
-	}
+	// Debido a que no funcion el conteo de resultados, voy haciendo multiples llamadas desde hasta
+	// hasta obtener la cantidad de resultados solicitados
+	// el tope de resultados por pagina es de 7,
+	// no funciona con mas de esto
+	maxResultsPage := 7
+	paginado := 1
+	c := 0 // contador de resultados
 
-	// Agega los headers al request
-	for _, header := range bnEngine.headers {
-		req.Header.Set(header.Key, header.Value)
-	}
-
-	// ejecuto el request
-	client := &http.Client{}
-	res, err := client.Do(req)
-	if err != nil {
-		FalseApiLog(fmt.Sprintf("Error al Crear Request -> %v", err.Error()))
-		return
-	}
-	defer res.Body.Close()
-
-	// // imprimir en pant
-
-	// cargo el documento de respuesta
-	doc, err := goquery.NewDocumentFromReader(res.Body)
-	if err != nil {
-		FalseApiLog(fmt.Sprintf("Error al consultar Yahoo Search -> %v", err.Error()))
-		return
-	}
-
-	// cargo la response (encabezado)
-	YahooAPIResponse := &YahooAPIResponse{
-		SearchId:      searchId,
-		OriginalQuery: request.Query,
-		Market:        request.Markets[0],
-		MaxURLs:       request.MaxURLs,
-		DateFrom:      request.DateFrom,
-		DateTo:        request.DateTo,
-		Values:        make([]YahooAPIResponseValue, 0),
-	}
-
-	// recorro las urls de resultados
-	c := 0                 // contador de urls obtenidas
 	wg := sync.WaitGroup{} // wait Group para los inserts a la base de datos
 
-	doc.Find(".algo-sr").Each(func(i int, result *goquery.Selection) {
+	for {
 
-		// obtengo los valores de la url, titulo y snippet
-		link, _ := result.Find("a").First().Attr("href")
+		// armo los parametros del paginado
+		pageParameters := "&b=" + fmt.Sprintf("%d", paginado) + fmt.Sprintf("&pz=%d", maxResultsPage)
 
-		title, _ := result.Find("a").First().Attr("aria-label")
+		// creo el request
+		req, err := http.NewRequest("GET", urlQuery+pageParameters, nil)
+		if err != nil {
+			FalseApiLog(fmt.Sprintf("Error al Crear Request -> %v", err.Error()))
+			return
+		}
 
-		snippet := result.Find("span.fc-falcon").First().Text()
-		c++
+		// Agega los headers al request
+		for _, header := range bnEngine.headers {
+			req.Header.Set(header.Key, header.Value)
+		}
 
-		// cargo los valores en la respuesta
-		YahooAPIResponse.Values = append(YahooAPIResponse.Values, YahooAPIResponseValue{
-			Url:      link,
-			Title:    title,
-			Snippet:  snippet,
-			Position: c})
+		// ejecuto el request
+		client := &http.Client{}
+		res, err := client.Do(req)
+		if err != nil {
+			FalseApiLog(fmt.Sprintf("Error al Crear Request -> %v", err.Error()))
+			return
+		}
+		defer res.Body.Close()
 
-		println("URL: ", sanitizeURL(link))
-		println("title: ", cleanHTMLTags(title))
-		println("snippet: ", snippet)
-		println("**************************************")
+		// // imprimir en pant
 
-		/****
-		ATENCION!!: Aqui Modificar para guardar en la base de datos
-		            Simulo una grabacion, ya que no tengo la base de datos
-		****/
-		wg.Add(1)
-		go func(str string) {
-			defer wg.Done() // Marcamos la goroutine como completada al final
-			//			fmt.Println(time.Now().Format("15:04:05"), link)
-			time.Sleep(1 * time.Second) // Simulamos una operación que toma tiempo
-		}(link)
+		// cargo el documento de respuesta
+		doc, err := goquery.NewDocumentFromReader(res.Body)
+		if err != nil {
+			FalseApiLog(fmt.Sprintf("Error al consultar Yahoo Search -> %v", err.Error()))
+			return
+		}
 
-	})
+		// cargo la response (encabezado)
+		YahooAPIResponse := &YahooAPIResponse{
+			SearchId:      searchId,
+			OriginalQuery: request.Query,
+			Market:        request.Markets[0],
+			MaxURLs:       request.MaxURLs,
+			DateFrom:      request.DateFrom,
+			DateTo:        request.DateTo,
+			Values:        make([]YahooAPIResponseValue, 0),
+		}
+
+		// recorro las urls de resultados
+
+		doc.Find(".algo-sr").Each(func(i int, result *goquery.Selection) {
+
+			// obtengo los valores de la url, titulo y snippet
+			link, _ := result.Find("a").First().Attr("href")
+
+			title, _ := result.Find("a").First().Attr("aria-label")
+
+			snippet := result.Find("span.fc-falcon").First().Text()
+			c++
+
+			// cargo los valores en la respuesta
+			YahooAPIResponse.Values = append(YahooAPIResponse.Values, YahooAPIResponseValue{
+				Url:      link,
+				Title:    title,
+				Snippet:  snippet,
+				Position: c})
+
+			// println("URL: ", sanitizeURL(link))
+			// println("title: ", cleanHTMLTags(title))
+			// println("snippet: ", snippet)
+			// println("**************************************")
+
+			/****
+			ATENCION!!: Aqui Modificar para guardar en la base de datos
+			            Simulo una grabacion, ya que no tengo la base de datos
+			****/
+			wg.Add(1)
+			go func(str string) {
+				defer wg.Done() // Marcamos la goroutine como completada al final
+				fmt.Println(time.Now().Format("15:04:05"), link)
+				time.Sleep(1 * time.Second) // Simulamos una operación que toma tiempo
+			}(link)
+
+		})
+
+		// aumento el paginado y veo si llegué al maximo
+		paginado += maxResultsPage
+
+		// Verifico contra el maximo de resultados solicitados
+		if paginado >= request.MaxURLs {
+			break
+		}
+
+	}
 
 	// Esperamos a que todas las goroutines terminen
 	wg.Wait()
