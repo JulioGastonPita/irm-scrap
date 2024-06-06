@@ -23,35 +23,29 @@ func NewYahooAPIEngine(options YahooAPIEngineOptions) (*YahooAPIEngine, error) {
 	var YahooAPIEngine YahooAPIEngine
 	YahooAPIEngine.RowsProvider = options.RowsProvider
 	YahooAPIEngine.headers = options.Headers
-	YahooAPIEngine.apiURL = "https://www.Yahoo.com"
+	YahooAPIEngine.apiURL = "search.yahoo.com"
 	YahooAPIEngine.Engine = "Yahoo"
 	return &YahooAPIEngine, nil
 }
 
 func (bnEngine YahooAPIEngine) Search(request models.IRMExtraSearchRequest, searchId int64) {
 
+	// si no se especifica, el markets
+	if request.Markets == nil {
+		request.Markets = []string{"US"}
+	}
+
 	// armo la url de busqueda, y codifico para URL segura
-	urlQuery := fmt.Sprintf("%s/search?q=%s", bnEngine.apiURL, url.QueryEscape(request.Query))
+	urlQuery := fmt.Sprintf("https://%s.%s/search?p=%s", request.Markets[0], bnEngine.apiURL, url.QueryEscape(request.Query))
+
+	// armo la url de busqueda, y codifico para URL segura
 
 	// si vienen fechas especificadas aplico el filtro
 	// tbs=cdr:1,cd_min:2/6/2024,cd_max:2/9/2024
 	// cdr:1: Indica que se está utilizando un rango de fechas personalizado.
 	if request.DateFrom != nil && request.DateTo != nil {
-		urlQuery += "&" + fmt.Sprintf("tbs=cdr:1,cd_min:%s,cd_max:%s", url.QueryEscape(request.DateFrom.Format("01/02/2006")), url.QueryEscape(request.DateTo.Format("01/02/2006")))
+		urlQuery += fmt.Sprintf("&fr=yfp-t&bt=%s&et=%s", request.DateFrom.Format("20060102"), request.DateTo.Format("20060102"))
 	}
-
-	// cargo la cantidad solicitadas de Urls de respuestas
-	if request.MaxURLs == 0 {
-		request.MaxURLs = 10
-	}
-	urlQuery += fmt.Sprintf("&start=1&num=%d", request.MaxURLs)
-
-	// cargo el Market si viene especificado
-	if len(request.Markets) > 0 {
-		urlQuery += "&" + fmt.Sprintf("cr=country%s", request.Markets[0])
-	}
-
-	urlQuery = "https://ar.search.yahoo.com/search?p=pisanesa&fr=yfp-t&fr2=p%3Afp%2Cm%3Asb&ei=UTF-8&fp=1&b=21"
 
 	// creo el request
 	req, err := http.NewRequest("GET", urlQuery, nil)
@@ -74,14 +68,7 @@ func (bnEngine YahooAPIEngine) Search(request models.IRMExtraSearchRequest, sear
 	}
 	defer res.Body.Close()
 
-	// // imprimir en pantalla en modo texto el res.Body
-	// bodyText, err := ioutil.ReadAll(res.Body)
-	// if err != nil {
-	// 	FalseApiLog(fmt.Sprintf("Error al leer el cuerpo de la respuesta -> %v", err.Error()))
-	// 	return
-	// }
-
-	// fmt.Println(string(bodyText))
+	// // imprimir en pant
 
 	// cargo el documento de respuesta
 	doc, err := goquery.NewDocumentFromReader(res.Body)
@@ -107,29 +94,12 @@ func (bnEngine YahooAPIEngine) Search(request models.IRMExtraSearchRequest, sear
 
 	doc.Find(".algo-sr").Each(func(i int, result *goquery.Selection) {
 
-		// imprimir en pantalla todo el contenido de result en texto
-		// resultText := result.Text()
-		// fmt.Println(resultText)
-
-		// // imprimir por pantalla la etiqueta correspondiente al texto
-		// fmt.Println(result.Nodes[0].Data)
-
 		// obtengo los valores de la url, titulo y snippet
 		link, _ := result.Find("a").First().Attr("href")
 
 		title, _ := result.Find("a").First().Attr("aria-label")
 
 		snippet := result.Find("span.fc-falcon").First().Text()
-		//	snippet := result.Text()
-
-		// println(snippet)
-
-		// result.Find("div.p.span.fc-refblack").Each(func(index int, item *goquery.Selection) {
-		// 	// Obtiene el texto del elemento
-		// 	text := item.Text()
-		// 	fmt.Printf("Element %d: %s\n", index, text)
-		// })
-
 		c++
 
 		// cargo los valores en la respuesta
@@ -143,9 +113,6 @@ func (bnEngine YahooAPIEngine) Search(request models.IRMExtraSearchRequest, sear
 		println("title: ", cleanHTMLTags(title))
 		println("snippet: ", snippet)
 		println("**************************************")
-
-		// println("Title: ", title)
-		// println("Snippet: ", snippet)
 
 		/****
 		ATENCION!!: Aqui Modificar para guardar en la base de datos
